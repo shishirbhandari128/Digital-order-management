@@ -1,0 +1,99 @@
+erDiagram
+    OUTLETS ||--o{ ITEMS : "has"
+    ITEMS ||--o{ ORDERS : "ordered_in"
+    QRS ||--o{ ORDERS : "used_for"
+    LOCATION ||--o{ QRS : "has"
+    LOCATION ||--o{ PATIENT : "has"
+    PATIENT ||--o{ ORDERS : "places"
+    VISITOR ||--o{ ORDERS : "places"
+    USERS ||--o{ ORDERS : "delivers"
+    ORDERS ||--o{ TRANSACTIONS : "has"
+    ORDERS ||--o{ FEEDBACK : "has"
+
+    OUTLETS {
+        id id
+        string name
+    }
+
+    ITEMS {
+        id id
+        id outlet_id
+        decimal price
+        string description
+        string image_url
+        boolean is_kot
+        boolean is_bot
+        boolean is_active
+        datetime created_at
+        datetime updated_at
+    }
+
+    ORDERS {
+        id id
+        id qr_id
+        id order_id "one id per order batch"
+        id item_id
+        string status
+        id assigned_delivery_user_id
+        boolean is_settled
+        datetime created_at
+        datetime updated_at
+        id patient_id
+        id visitor_id "added - visitor orders"
+    }
+
+    QRS {
+        id id
+        id location_id
+        string image_url
+        datetime created_at
+        datetime updated_at
+    }
+
+    USERS {
+        id id
+        string name
+        string role
+        datetime created_at
+        datetime updated_at
+        boolean is_active
+    }
+
+    LOCATION {
+        id id
+        string ward_name
+        string bed_number
+        boolean is_public_space
+        boolean is_patient_space_only
+        datetime created_at
+        datetime updated_at
+    }
+
+    VISITOR {
+        id id "mobile"
+        string name
+        string mobile
+    }
+
+    TRANSACTIONS {
+        id id
+        id order_id
+        boolean is_cod
+        boolean is_midas_credit
+        string status
+        datetime created_at
+    }
+
+    PATIENT {
+        id id
+        string midas_id
+        id location_id
+        string name
+    }
+
+    FEEDBACK {
+        id id
+        id order_id
+        string feedback_and_others
+        datetime created_at
+    }
