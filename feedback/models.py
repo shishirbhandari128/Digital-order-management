@@ -1,14 +1,22 @@
 import uuid
 
+from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 
 from orders.models import Order
 
 
+class FeedbackType(models.TextChoices):
+    FOOD_FEEDBACK = 'food_feedback', 'Food Feedback'
+    DELIVERY_FEEDBACK = 'delivery_feedback', 'Delivery Feedback'
+
+
 class Feedback(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name='feedback_entries')
-    feedback_and_others = models.TextField()
+    feedback_type = models.CharField(max_length=32, choices=FeedbackType.choices, default=FeedbackType.FOOD_FEEDBACK)
+    rating = models.PositiveSmallIntegerField(validators=[MinValueValidator(1), MaxValueValidator(5)])
+    feedback_and_others = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self) -> str:

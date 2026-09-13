@@ -32,6 +32,18 @@ def api_root(request, format=None):
             'login': reverse('accounts:login', request=request, format=format),
             'logout': reverse('accounts:logout', request=request, format=format),
             'token_refresh': reverse('token_refresh', request=request, format=format),
+            'outlets': reverse('outlets:outlet-list-create', request=request, format=format),
+            'items': reverse('menu:item-list-create', request=request, format=format),
+            'locations': reverse('customers:location-list-create', request=request, format=format),
+            'qr_codes': reverse('customers:qrcode-list-create', request=request, format=format),
+            'patients': reverse('customers:patient-list-create', request=request, format=format),
+            'visitors': reverse('customers:visitor-list-create', request=request, format=format),
+            'orders': reverse('orders:order-list-create', request=request, format=format),
+            'visitor_checkout': reverse('orders:visitor-checkout', request=request, format=format),
+            'visitor_order_history': reverse('orders:visitor-history', request=request, format=format),
+            'transactions': reverse('billing:transaction-list-create', request=request, format=format),
+            'feedback': reverse('feedback:feedback-list-create', request=request, format=format),
+            'feedback_submit': reverse('feedback:feedback-submit', request=request, format=format),
             'browsable_api_login': reverse('rest_framework:login', request=request, format=format),
         }
     })
@@ -51,4 +63,13 @@ urlpatterns = [
 
     # Versioned business endpoints
     path('api/v1/accounts/', include('accounts.urls')),
+    path('api/v1/outlets/', include('outlets.urls')),
+    path('api/v1/items/', include('menu.urls')),
+    path('api/v1/customers/', include('customers.urls')),
+    path('api/v1/orders/', include('orders.urls')),
+    path('api/v1/transactions/', include('billing.urls')),
+    path('api/v1/feedback/', include('feedback.urls')),
 ]
+
+
+
