@@ -19,10 +19,7 @@ from django.urls import path, include
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework.reverse import reverse
-from rest_framework_simplejwt.views import (
-    TokenObtainPairView,
-    TokenRefreshView,
-)
+from rest_framework_simplejwt.views import TokenRefreshView
 
 @api_view(['GET'])
 def api_root(request, format=None):
@@ -31,7 +28,9 @@ def api_root(request, format=None):
         'message': 'Welcome to Digital Order Management System API',
         'endpoints': {
             'admin': reverse('admin:index', request=request, format=format),
-            'token_obtain_pair': reverse('token_obtain_pair', request=request, format=format),
+            'register': reverse('accounts:register', request=request, format=format),
+            'login': reverse('accounts:login', request=request, format=format),
+            'logout': reverse('accounts:logout', request=request, format=format),
             'token_refresh': reverse('token_refresh', request=request, format=format),
             'browsable_api_login': reverse('rest_framework:login', request=request, format=format),
         }
@@ -40,17 +39,16 @@ def api_root(request, format=None):
 urlpatterns = [
     # Root API view
     path('', api_root, name='api-root'),
-    
+
     # Admin
     path('admin/', admin.site.urls),
-    
-    # JWT Authentication endpoints
-    path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
+
+    # JWT token refresh
     path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
-    
+
     # Browsable API login/logout (session auth in browser)
     path('api-auth/', include('rest_framework.urls')),
+
+    # Versioned business endpoints
+    path('api/v1/accounts/', include('accounts.urls')),
 ]
-
-
-
