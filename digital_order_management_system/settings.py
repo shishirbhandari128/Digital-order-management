@@ -49,9 +49,19 @@ EXTERNAL_APPS = [
     'rest_framework_simplejwt',
 ]
 
-LOCAL_APPS = []
+LOCAL_APPS = [
+    'accounts',
+    'customers',
+    'outlets',
+    'menu',
+    'orders',
+    'billing',
+    'feedback',
+]
 
 INSTALLED_APPS += EXTERNAL_APPS + LOCAL_APPS
+
+AUTH_USER_MODEL = 'accounts.User'
 
 # Django REST Framework Settings
 REST_FRAMEWORK = {

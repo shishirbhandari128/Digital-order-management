@@ -15,6 +15,24 @@ services:
       timeout: 5s
       retries: 5
 
+  minio:
+    image: quay.io/minio/minio:latest
+    container_name: digital_order_minio
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    env_file:
+      - .env
+    ports:
+      - "9000:9000"   # S3 API
+      - "9001:9001"   # Web console
+    volumes:
+      - minio_data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
   web:
     build: .
     container_name: digital_order_web
@@ -29,9 +47,13 @@ services:
     environment:
       DB_HOST: db
       DB_PORT: 5432
+      AWS_S3_ENDPOINT_URL: http://minio:9000
     depends_on:
       db:
+        condition: service_healthy
+      minio:
         condition: service_healthy
 
 volumes:
   postgres_data:
+  minio_data:
