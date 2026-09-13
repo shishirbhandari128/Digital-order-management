@@ -10,5 +10,7 @@ class TransactionSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Transaction
-        fields = ['id', 'order', 'is_cod', 'is_midas_credit', 'status', 'created_at']
+        fields = [
+            'id', 'order', 'is_cod', 'is_midas_credit', 'status', 'amount', 'external_reference', 'created_at',
+        ]
         read_only_fields = ['id', 'created_at']

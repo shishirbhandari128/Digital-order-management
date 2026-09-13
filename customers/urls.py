@@ -6,6 +6,7 @@ app_name = 'customers'
 
 urlpatterns = [
     path('qr/<uuid:qr_id>/', views.QRLocationLookupAPIView.as_view(), name='qr-lookup'),
+    path('patients/verify/', views.PatientVerifyAPIView.as_view(), name='patient-verify'),
     path('locations/', views.LocationListCreateAPIView.as_view(), name='location-list-create'),
     path('locations/<uuid:pk>/', views.LocationRetrieveUpdateDestroyAPIView.as_view(), name='location-detail'),
     path('qr-codes/', views.QRCodeListCreateAPIView.as_view(), name='qrcode-list-create'),

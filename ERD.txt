@@ -10,6 +10,13 @@ erDiagram
     ORDERS ||--o{ TRANSACTIONS : "has"
     ORDERS ||--o{ FEEDBACK : "has"
 
+    OUTLETS ||--o{ HISTORICAL_OUTLETS : "tracked_by"
+    ITEMS ||--o{ HISTORICAL_ITEMS : "tracked_by"
+    ORDERS ||--o{ HISTORICAL_ORDERS : "tracked_by"
+    USERS ||--o{ HISTORICAL_USERS : "tracked_by"
+    PATIENT ||--o{ HISTORICAL_PATIENT : "tracked_by"
+    TRANSACTIONS ||--o{ HISTORICAL_TRANSACTIONS : "tracked_by"
+
     OUTLETS {
         id id
         string name
@@ -94,6 +101,68 @@ erDiagram
     FEEDBACK {
         id id
         id order_id
+        string feedback_type "food_feedback / delivery_feedback"
         string feedback_and_others
         datetime created_at
+    }
+
+    HISTORICAL_OUTLETS {
+        id history_id
+        id id "original record id"
+        string name
+        datetime history_date
+        string history_type "created/changed/deleted"
+        id history_user_id
+    }
+
+    HISTORICAL_ITEMS {
+        id history_id
+        id id "original record id"
+        id outlet_id
+        decimal price
+        boolean is_active
+        datetime history_date
+        string history_type
+        id history_user_id
+    }
+
+    HISTORICAL_ORDERS {
+        id history_id
+        id id "original record id"
+        string status
+        boolean is_settled
+        datetime history_date
+        string history_type
+        id history_user_id
+    }
+
+    HISTORICAL_USERS {
+        id history_id
+        id id "original record id"
+        string name
+        string role
+        boolean is_active
+        datetime history_date
+        string history_type
+        id history_user_id
+    }
+
+    HISTORICAL_PATIENT {
+        id history_id
+        id id "original record id"
+        string midas_id
+        string name
+        datetime history_date
+        string history_type
+        id history_user_id
+    }
+
+    HISTORICAL_TRANSACTIONS {
+        id history_id
+        id id "original record id"
+        string status
+        boolean is_midas_credit
+        datetime history_date
+        string history_type
+        id history_user_id
     }

@@ -49,6 +49,7 @@ EXTERNAL_APPS = [
     'rest_framework_simplejwt',
     'rest_framework_simplejwt.token_blacklist',
     'simple_history',
+    'drf_spectacular',
 ]
 
 LOCAL_APPS = [
@@ -59,6 +60,7 @@ LOCAL_APPS = [
     'orders',
     'billing',
     'feedback',
+    'midas',
 ]
 
 INSTALLED_APPS += EXTERNAL_APPS + LOCAL_APPS
@@ -76,6 +78,25 @@ REST_FRAMEWORK = {
     ],
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 10,
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
+}
+
+# drf-spectacular (OpenAPI schema / Swagger UI / ReDoc) settings
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'Cafe Cucina Digital Order Management System API',
+    'DESCRIPTION': (
+        'Web/mobile food-ordering platform for HAMS Hospital patients, visitors, outlet staff, '
+        'kitchen staff, delivery staff, and administrators. Integrates with the MIDAS Hospital '
+        'Management System for patient verification and hospital-bill charging.'
+    ),
+    'VERSION': '1.0.0',
+    'SERVE_INCLUDE_SCHEMA': False,
+    'SCHEMA_PATH_PREFIX': r'/api/v[0-9]',
+    'COMPONENT_SPLIT_REQUEST': True,
+    'SORT_OPERATIONS': False,
+    'ENUM_NAME_OVERRIDES': {
+        'OrderStatusEnum': 'orders.models.OrderStatus.choices',
+    },
 }
 
 # SimpleJWT Settings
@@ -188,3 +209,13 @@ MAILERS = {
         'BACKEND': 'django.core.mail.backends.console.EmailBackend',
     },
 }
+
+
+# MIDAS Hospital Management System integration
+# https://docs.djangoproject.com/en/6.1/topics/settings/#creating-your-own-settings
+
+MIDAS_BACKEND = os.getenv('MIDAS_BACKEND', 'stub')
+MIDAS_BASE_URL = os.getenv('MIDAS_BASE_URL', '')
+MIDAS_API_KEY = os.getenv('MIDAS_API_KEY', '')
+MIDAS_TIMEOUT = float(os.getenv('MIDAS_TIMEOUT', '5'))
+MIDAS_MAX_RETRIES = int(os.getenv('MIDAS_MAX_RETRIES', '2'))

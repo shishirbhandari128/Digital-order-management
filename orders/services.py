@@ -20,6 +20,14 @@ TRACKED_STAGES = [
     OrderStatus.DELIVERED,
 ]
 
+ACTIVE_STATUSES = [
+    OrderStatus.CONFIRMED,
+    OrderStatus.PREPARING,
+    OrderStatus.READY,
+    OrderStatus.ASSIGNED,
+    OrderStatus.PICKED_UP,
+]
+
 
 def bottleneck_status(statuses: list[str]) -> str:
     """The least-advanced status among a batch's order lines, i.e. the status the whole batch has reached."""

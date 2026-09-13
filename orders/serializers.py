@@ -83,3 +83,75 @@ class VisitorCheckoutSerializer(serializers.Serializer):
     qr_id = serializers.UUIDField()
     items = CheckoutItemSerializer(many=True, allow_empty=False)
     special_instructions = serializers.CharField(required=False, allow_blank=True)
+
+
+class PatientCheckoutSerializer(serializers.Serializer):
+    midas_id = serializers.CharField(max_length=64)
+    qr_id = serializers.UUIDField()
+    items = CheckoutItemSerializer(many=True, allow_empty=False)
+    special_instructions = serializers.CharField(required=False, allow_blank=True)
+
+
+class VisitorCheckoutResponseSerializer(serializers.Serializer):
+    """Documents the response shape of VisitorCheckoutAPIView (built by hand, not via .data)."""
+    batch_id = serializers.UUIDField()
+    status = serializers.ChoiceField(choices=OrderStatus.choices)
+    payment_method = serializers.CharField()
+    payment_status = serializers.CharField()
+    total_amount = serializers.DecimalField(max_digits=10, decimal_places=2)
+    delivery_location = serializers.CharField()
+    items_count = serializers.IntegerField()
+    created_at = serializers.DateTimeField()
+
+
+class PatientCheckoutResponseSerializer(serializers.Serializer):
+    """Documents the response shape of PatientCheckoutAPIView (built by hand, not via .data)."""
+    batch_id = serializers.UUIDField()
+    status = serializers.ChoiceField(choices=OrderStatus.choices)
+    payment_method = serializers.CharField()
+    payment_status = serializers.CharField()
+    midas_charge_reference = serializers.CharField()
+    total_charged = serializers.DecimalField(max_digits=10, decimal_places=2)
+    patient_name = serializers.CharField()
+    delivery_location = serializers.CharField()
+    created_at = serializers.DateTimeField()
+
+
+class BatchTrackingStageSerializer(serializers.Serializer):
+    status = serializers.CharField()
+    timestamp = serializers.DateTimeField(allow_null=True)
+    completed = serializers.BooleanField()
+
+
+class DeliveryPersonSerializer(serializers.Serializer):
+    name = serializers.CharField(allow_null=True)
+    assigned = serializers.BooleanField()
+
+
+class BatchTrackingResponseSerializer(serializers.Serializer):
+    """Documents the response shape of OrderBatchTrackingAPIView (built by hand, not via .data)."""
+    batch_id = serializers.UUIDField()
+    overall_status = serializers.CharField()
+    status_progression = BatchTrackingStageSerializer(many=True)
+    delivery_person = DeliveryPersonSerializer()
+    is_delivered = serializers.BooleanField()
+    feedback_submitted = serializers.BooleanField()
+
+
+class VisitorBatchSummarySerializer(serializers.Serializer):
+    """Documents one entry of VisitorOrderHistoryAPIView's response list."""
+    batch_id = serializers.UUIDField()
+    status = serializers.CharField()
+    items_count = serializers.IntegerField()
+    total_amount = serializers.DecimalField(max_digits=10, decimal_places=2)
+    created_at = serializers.DateTimeField()
+
+
+class PatientActiveBatchSummarySerializer(serializers.Serializer):
+    """Documents one entry of PatientActiveOrdersAPIView's response list."""
+    batch_id = serializers.UUIDField()
+    status = serializers.CharField()
+    items_count = serializers.IntegerField()
+    total_amount = serializers.DecimalField(max_digits=10, decimal_places=2)
+    delivery_location = serializers.CharField()
+    created_at = serializers.DateTimeField()

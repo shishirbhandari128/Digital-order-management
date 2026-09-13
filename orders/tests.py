@@ -1,3 +1,4 @@
+import uuid
 from decimal import Decimal
 
 from django.urls import reverse
@@ -6,7 +7,7 @@ from rest_framework.test import APITestCase
 
 from accounts.models import User, UserRole
 from billing.models import Transaction, TransactionStatus
-from customers.models import Location, QRCode, Visitor
+from customers.models import Location, Patient, QRCode, Visitor
 from menu.models import Item
 from outlets.models import Outlet
 
@@ -175,4 +176,109 @@ class VisitorOrderHistoryTests(APITestCase):
     def test_history_empty_for_unknown_mobile(self):
         response = self.client.get(reverse('orders:visitor-history'), {'mobile': '0000000000'})
         self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data, [])
+
+
+class PatientCheckoutTests(APITestCase):
+    def setUp(self):
+        self.url = reverse('orders:patient-checkout')
+        self.outlet = Outlet.objects.create(name='Bakery')
+        self.item = Item.objects.create(outlet=self.outlet, name='Croissant', price=Decimal('150.00'))
+        self.inactive_item = Item.objects.create(
+            outlet=self.outlet, name='Stale Bun', price=Decimal('10.00'), is_active=False,
+        )
+        self.icu_location = Location.objects.create(ward_name='ICU Ward 3', bed_number='Bed 12')
+        self.icu_qr = QRCode.objects.create(location=self.icu_location)
+        self.patient = Patient.objects.create(
+            midas_id='HAMS-101', name='Ram Bahadur Shrestha', location=self.icu_location,
+        )
+        self.payload = {
+            'midas_id': 'HAMS-101',
+            'qr_id': str(self.icu_qr.id),
+            'items': [{'item_id': str(self.item.id), 'quantity': 2}],
+            'special_instructions': 'Low sodium preparation',
+        }
+
+    def test_checkout_charges_midas_and_confirms_order(self):
+        response = self.client.post(self.url, self.payload, format='json')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.data['status'], OrderStatus.CONFIRMED)
+        self.assertEqual(response.data['payment_method'], 'midas_hospital_credit')
+        self.assertEqual(response.data['payment_status'], TransactionStatus.SUCCESS)
+        self.assertEqual(response.data['total_charged'], '300.00')
+        self.assertTrue(response.data['midas_charge_reference'].startswith('MIDAS-CHG-'))
+        self.assertEqual(response.data['patient_name'], 'Ram Bahadur Shrestha')
+        self.assertEqual(response.data['delivery_location'], 'ICU Ward 3 - Bed 12')
+
+        order = Order.objects.get(batch_id=response.data['batch_id'])
+        self.assertEqual(order.status, OrderStatus.CONFIRMED)
+        self.assertEqual(order.patient_id, self.patient.id)
+
+        txn = Transaction.objects.get(order=order)
+        self.assertTrue(txn.is_midas_credit)
+        self.assertFalse(txn.is_cod)
+        self.assertEqual(txn.status, TransactionStatus.SUCCESS)
+        self.assertEqual(txn.amount, Decimal('300.00'))
+        self.assertEqual(txn.external_reference, response.data['midas_charge_reference'])
+
+    def test_checkout_rejects_unverified_patient(self):
+        self.patient.delete()
+        response = self.client.post(self.url, self.payload, format='json')
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(Order.objects.count(), 0)
+
+    def test_checkout_rejects_insufficient_credit_and_creates_no_orders(self):
+        general_ward = Location.objects.create(ward_name='General Ward 1', bed_number='Bed 05')
+        Patient.objects.create(midas_id='HAMS-102', name='Sita Devi Thapa', location=general_ward)
+        qr = QRCode.objects.create(location=general_ward)
+        payload = {**self.payload, 'midas_id': 'HAMS-102', 'qr_id': str(qr.id)}
+
+        response = self.client.post(self.url, payload, format='json')
+        self.assertEqual(response.status_code, status.HTTP_402_PAYMENT_REQUIRED)
+        self.assertEqual(Order.objects.count(), 0)
+        self.assertEqual(Transaction.objects.count(), 0)
+
+    def test_checkout_rejects_inactive_item_without_charging(self):
+        payload = {**self.payload, 'items': [{'item_id': str(self.inactive_item.id), 'quantity': 1}]}
+        response = self.client.post(self.url, payload, format='json')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(Order.objects.count(), 0)
+
+
+class PatientActiveOrdersTests(APITestCase):
+    def setUp(self):
+        self.outlet = Outlet.objects.create(name='Bakery')
+        self.item = Item.objects.create(outlet=self.outlet, name='Croissant', price=Decimal('150.00'))
+        self.location = Location.objects.create(ward_name='ICU Ward 3', bed_number='Bed 12')
+        self.qr = QRCode.objects.create(location=self.location)
+        self.patient = Patient.objects.create(
+            midas_id='HAMS-101', name='Ram Bahadur Shrestha', location=self.location,
+        )
+
+    def test_requires_midas_id(self):
+        response = self.client.get(reverse('orders:patient-active'))
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_lists_active_batch_after_checkout(self):
+        self.client.post(
+            reverse('orders:patient-checkout'),
+            {
+                'midas_id': 'HAMS-101',
+                'qr_id': str(self.qr.id),
+                'items': [{'item_id': str(self.item.id), 'quantity': 1}],
+            },
+            format='json',
+        )
+        response = self.client.get(reverse('orders:patient-active'), {'midas_id': 'HAMS-101'})
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 1)
+        self.assertEqual(response.data[0]['status'], OrderStatus.CONFIRMED)
+        self.assertEqual(response.data[0]['delivery_location'], 'ICU Ward 3 - Bed 12')
+
+    def test_delivered_batch_is_excluded(self):
+        Order.objects.create(
+            qr=self.qr, batch_id=uuid.uuid4(), item=self.item, quantity=1, unit_price=self.item.price,
+            status=OrderStatus.DELIVERED, patient=self.patient,
+        )
+        response = self.client.get(reverse('orders:patient-active'), {'midas_id': 'HAMS-101'})
         self.assertEqual(response.data, [])
