@@ -1,3 +1,40 @@
-from django.shortcuts import render
+from drf_spectacular.utils import OpenApiResponse, extend_schema
+from rest_framework import generics, permissions, status
+from rest_framework.response import Response
+from rest_framework.views import APIView
+from rest_framework_simplejwt.views import TokenObtainPairView
 
-# Create your views here.
+from .models import User
+from .serializers import LoginSerializer, LogoutSerializer, UserRegistrationSerializer, UserSerializer
+
+
+class UserRegistrationAPIView(generics.CreateAPIView):
+    queryset = User.objects.all()
+    serializer_class = UserRegistrationSerializer
+    permission_classes = [permissions.IsAdminUser]
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user = serializer.save()
+        return Response(UserSerializer(user).data, status=status.HTTP_201_CREATED)
+
+
+class LoginAPIView(TokenObtainPairView):
+    serializer_class = LoginSerializer
+    permission_classes = [permissions.AllowAny]
+
+
+class LogoutAPIView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    @extend_schema(
+        request=LogoutSerializer,
+        responses={205: OpenApiResponse(description='Refresh token blacklisted.')},
+        summary='Blacklist a refresh token (logout)',
+    )
+    def post(self, request):
+        serializer = LogoutSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(status=status.HTTP_205_RESET_CONTENT)
